@@ -1,7 +1,7 @@
 
 /*
-    For line elmenet is parent and we generate lines
-    For cover we replace it with a div with same classes document.getElementById(ele).getAttribute('class')
+    For line: element is parent and we generate lines
+    For cover: we replace it with a div with same classes document.getElementById(ele).getAttribute('class')
 */
 
 /*
@@ -51,7 +51,7 @@ class SkeletonLoader {
         if(!spaceBetween) spaceBetween = '0 0 .25rem 0';
 
         if(animation === undefined || (typeof animation !== 'object' && Array.isArray(animation))) animation = {};
-        animation.type = (animation?.type && possibleAnimations.includes(animation.type)) ? animation.type : 'blink';
+        animation.type = (animation?.type && SkeletonLoader.possibleAnimations.includes(animation.type)) ? animation.type : 'blink';
         animation.duration = animation?.duration ? animation.duration : '1000ms';
 
         if(lastLine === undefined || (typeof lastLine !== 'object' && Array.isArray(lastLine))) lastLine = {};
@@ -59,8 +59,13 @@ class SkeletonLoader {
         lastLine.height = lastLine?.height ? lastLine.height : '100%';
         lastLine.spaceBetween = lastLine?.spaceBetween ? lastLine.spaceBetween : '0 auto 0 auto';
 
-        startClr = startClr === undefined ? 'hsl(200, 20%, 70%)' : startClr;
-        endClr = endClr === undefined ? 'hsl(200, 20%, 95%)' : endClr;
+        if(animation.type === 'blink'){
+            startClr = startClr === undefined ? 'hsl(200, 20%, 70%)' : startClr;
+            endClr = endClr === undefined ? 'hsl(200, 20%, 95%)' : endClr;
+        } else if(animation.type === 'shimmer'){
+            startClr = startClr === undefined ? '#eaeaea' : startClr;
+            endClr = endClr === undefined ? 'linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.2) 20%, rgba(255, 255, 255, 0.5) 60%, rgba(255, 255, 255, 0))' : endClr;
+        }
 
         this.selector = selector;
         this.element = element;
@@ -85,37 +90,62 @@ class SkeletonLoader {
 
 
         // Skeleton Styless
-        this.styles = `
-        ${this.selector}.skeleton {
-            width: ${this.width};
-            height: ${this.height};
-            opacity: 0.7;
-            animation: skeleton-${this.animation.type} ${this.animation.duration} linear infinite alternate;
-        }`;
-        if(this.type === 'line')
+        if(this.animation.type === 'blink'){
+            this.styles = `
+                @keyframes skeleton-${this.animation.type} {
+                    0% {
+                        background-color: ${this.startClr};
+                    }
+                    100% {
+                        background-color: ${this.endClr});
+                    }
+                }`;
             this.styles += `
-            ${this.selector} > .skeleton--line {
+            ${this.selector}${ this.type === 'line' ? ' > ' : ''}.skeleton {
                 width: ${this.width};
                 height: ${this.height};
-                margin: ${this.spaceBetween};
-                border-radius: .125rem;
-            }
-            ${this.selector} > .skeleton--line:last-of-type {
-                height: ${this.lastLine.height};
-                margin: ${this.lastLine.spaceBetween};
-                width: ${this.lastLine.width};
+                opacity: 0.7;
+                animation: skeleton-${this.animation.type} ${this.animation.duration} linear infinite alternate;
             }`;
-        
-        // Skeleton animation styles
-        this.styles += `
-        @keyframes skeleton-${this.animation.type} {
-            0% {
+        } else if(this.animation.type === 'shimmer') {
+            this.styles = `${this.selector}${ this.type === 'line' ? ' > ' : ''}.skeleton::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                transform: translateX(-100%);
+                background-image: ${this.endClr};
+                animation: skeleton-shimmer 1s infinite;
+            }
+            @keyframes skeleton-shimmer {
+                100%{transform: translateX(100%);}
+            }`;
+            this.styles += `
+            ${this.selector}${ this.type === 'line' ? ' > ' : ''}.skeleton {
+                width: ${this.width};
+                height: ${this.height};
+                position: relative;
+                transition: transform 200ms ease-in-out;
                 background-color: ${this.startClr};
-            }
-            100% {
-                background-color: ${this.endClr});
-            }
-        }`;
+                overflow: hidden;
+            }`;
+        }
+
+            if(this.type === 'line')
+                this.styles += `
+                ${this.selector} > .skeleton--line {
+                    width: ${this.width};
+                    height: ${this.height};
+                    margin: ${this.spaceBetween};
+                    border-radius: .125rem;
+                }
+                ${this.selector} > .skeleton--line:last-of-type {
+                    height: ${this.lastLine.height};
+                    margin: ${this.lastLine.spaceBetween};
+                    width: ${this.lastLine.width};
+                }`;
+
+        // Skeleton animation styles
+        
         // Setting Skeleton Element
         this.styleElem.innerHTML = this.styles;
         document.body.appendChild(this.styleElem);
@@ -156,6 +186,56 @@ class SkeletonLoader {
 //     selector: '.user__avatar',
 //     type: 'cover',
 //     width: '100px'
+// });
+
+// new SkeletonLoader({
+//     selector: '.user__avatar',
+//     type: 'cover',
+//     width: '100%',
+//     animation: {
+//         type: 'blink'
+//     }
+// });
+// new SkeletonLoader({
+//     selector: '.user__avatar',
+//     type: 'cover',
+//     width: '100%',
+//     animation: {
+//         type: 'shimmer'
+//     },
+//    // startClr: 'darkgray'
+// });
+
+// new SkeletonLoader({
+//     selector: '.user__info',
+//     type: 'line',
+//     lineCount: 3,
+//     height: '100%',
+//     spaceBetween: '0 .25rem 0 .25rem'
+// });
+// new SkeletonLoader({
+//     selector: '.user__info',
+//     type: 'line',
+//     lineCount: 3,
+//     height: '100%',
+//     spaceBetween: '0 .25rem 0 .25rem',
+//     animation: {
+//         type: 'shimmer'
+//     }
+// });
+
+// new SkeletonLoader({
+//     selector: '.user__details',
+//     type: 'line',
+//     lineCount: 5,
+// });
+// new SkeletonLoader({
+//     selector: '.user__details',
+//     type: 'line',
+//     lineCount: 5,
+//     animation: {
+//         type: 'shimmer'
+//     }
 // });
 
 export { SkeletonLoader };
