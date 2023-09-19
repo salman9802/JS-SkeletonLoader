@@ -66,21 +66,18 @@ class SkeletonLoader {
         this.animation = animation; // TODO use spread operator for default config
         this.startClr = startClr;
         this.endClr = endClr;
-        this.start();
-    }
 
-    start() {
-        this.element.classList.add('skeleton');
-        this.element.classList.add(`skeleton-${this.animation.type}`);
+        this.styleElem = document.createElement('style');
 
-        let styles = `
+
+        // Skeleton Styless
+        this.styles = `
         ${this.selector}.skeleton {
             opacity: 0.7;
             animation: skeleton-${this.animation.type} ${this.animation.duration} linear infinite alternate;
         }`;
-        // console.log(styles);
-
-        styles += `
+        // Skeleton animation styles
+        this.styles += `
         @keyframes skeleton-${this.animation.type} {
             0% {
                 background-color: ${this.startClr};
@@ -88,16 +85,49 @@ class SkeletonLoader {
             100% {
                 background-color: ${this.endClr});
             }
-        }`
+        }`;
+        // Setting Skeleton Element
+        this.styleElem.innerHTML = this.styles;
 
-
-        const styleElem = document.createElement('style');
-        styleElem.innerHTML = styles;
-
-        document.body.appendChild(styleElem);
+        this.start();
     }
 
-    stop() {}
+    start() {
+        this.element.classList.add('skeleton');
+        this.element.classList.add(`skeleton-${this.animation.type}`);
+        
+        // let styles = `
+        // ${this.selector}.skeleton {
+        //     opacity: 0.7;
+        //     animation: skeleton-${this.animation.type} ${this.animation.duration} linear infinite alternate;
+        // }`;
+
+        // styles += `
+        // @keyframes skeleton-${this.animation.type} {
+        //     0% {
+        //         background-color: ${this.startClr};
+        //     }
+        //     100% {
+        //         background-color: ${this.endClr});
+        //     }
+        // }`;
+
+
+        // const styleElem = document.createElement('style');
+        // styleElem.innerHTML = styles;
+
+        // document.body.appendChild(styleElem);
+    }
+
+    stop() {
+        // this.element.classList.remove('skeleton');
+        // this.element.classList.remove(`skeleton-${this.animation.type}`);
+        const elements = document.querySelectorAll(this.selector);
+        elements.forEach(ele => {
+            ele.classList.remove('skeleton');
+            ele.classList.remove(`skeleton-${this.animation.type}`);
+        });
+    }
 }
 
 
