@@ -25,7 +25,7 @@ class SkeletonLoader {
     static possibleAnimations = ['blink', 'shimmer'];
 
 
-    constructor({ selector, type, lineCount, width, height, spaceBetween, animation, startClr, endClr}) {
+    constructor({ selector, type, lineCount, width, height, spaceBetween, animation, startClr, endClr, lastLine}) {
         let element;
 
         // Validations
@@ -36,7 +36,7 @@ class SkeletonLoader {
             if(!SkeletonLoader.possibleTypes.includes(type)) throw new Error(`Invalid type. No type "${type}"`);
             if(width !== undefined && !width.match(/^[0-9]{1,3}.{1,2}$/)) throw new Error(`Invalid width "${width}" given`);
             if(height !== undefined && !height.match(/^[0-9]{1,3}.{1,2}$/)) throw new Error(`Invalid height "${height}" given`);
-            if(spaceBetween !== undefined && !spaceBetween.match(/^[0-9]*\.?[0-9]*.{1,3}$/)) throw new Error(`Invalid spaceBetween value, "${spaceBetween}" given`);
+            // if(spaceBetween !== undefined && !spaceBetween.match(/^([0-9]*\.?[0-9]*.{1,3})$/)) throw new Error(`Invalid spaceBetween value, "${spaceBetween}" given`);
             if(animation?.duration && !animation.duration.match(/^[0-9]+(s|ms)$/)) throw new Error(`Invalid animation.duration "${animation.duration}" given`);
             if( startClr !== undefined && (typeof startClr !== 'string' && !(startClr instanceof String))) throw new Error(`Invalid startClr ${startClr} given`);
             if( endClr !== undefined && (typeof endClr !== 'string' && !(endClr instanceof String))) throw new Error(`Invalid endClr ${endClr} given`);
@@ -48,9 +48,17 @@ class SkeletonLoader {
 
         // Defaults
         if(lineCount == undefined || isNaN(lineCount)) lineCount = 1;
+        if(!spaceBetween) spaceBetween = '0 0 .25rem 0';
+
         if(animation === undefined || (typeof animation !== 'object' && Array.isArray(animation))) animation = {};
         animation.type = (animation?.type && possibleAnimations.includes(animation.type)) ? animation.type : 'blink';
         animation.duration = animation?.duration ? animation.duration : '1000ms';
+
+        if(lastLine === undefined || (typeof lastLine !== 'object' && Array.isArray(lastLine))) lastLine = {};
+        lastLine.width = lastLine?.width ? lastLine.width : '80%';
+        lastLine.height = lastLine?.height ? lastLine.height : '100%';
+        lastLine.spaceBetween = lastLine?.spaceBetween ? lastLine.spaceBetween : '0 auto 0 auto';
+
         startClr = startClr === undefined ? 'hsl(200, 20%, 70%)' : startClr;
         endClr = endClr === undefined ? 'hsl(200, 20%, 95%)' : endClr;
 
@@ -58,14 +66,20 @@ class SkeletonLoader {
         this.element = element;
         this.type = type;
         this.lineCount = lineCount;
+        this.width = width === undefined ? '100%' : width;
         if(type === 'line'){
-            this.width = width === undefined ? '100%' : width;
+            // this.width = width === undefined ? '100%' : width;
             this.height = height === undefined ? '100%' : height;
+        }else if(type === 'cover'){
+            // this.width = width === undefined ? '100%' : width;
+            this.height = height === undefined ? '.8em' : height;
         }
+
         this.spaceBetween = spaceBetween;
         this.animation = animation; // TODO use spread operator for default config
         this.startClr = startClr;
         this.endClr = endClr;
+        this.lastLine = lastLine;
 
         this.styleElem = document.createElement('style');
 
@@ -73,9 +87,25 @@ class SkeletonLoader {
         // Skeleton Styless
         this.styles = `
         ${this.selector}.skeleton {
+            width: ${this.width};
+            height: ${this.height};
             opacity: 0.7;
             animation: skeleton-${this.animation.type} ${this.animation.duration} linear infinite alternate;
         }`;
+        if(this.type === 'line')
+            this.styles += `
+            ${this.selector} > .skeleton--line {
+                width: ${this.width};
+                height: ${this.height};
+                margin: ${this.spaceBetween};
+                border-radius: .125rem;
+            }
+            ${this.selector} > .skeleton--line:last-of-type {
+                height: ${this.lastLine.height};
+                margin: ${this.lastLine.spaceBetween};
+                width: ${this.lastLine.width};
+            }`;
+        
         // Skeleton animation styles
         this.styles += `
         @keyframes skeleton-${this.animation.type} {
@@ -88,45 +118,36 @@ class SkeletonLoader {
         }`;
         // Setting Skeleton Element
         this.styleElem.innerHTML = this.styles;
+        document.body.appendChild(this.styleElem);
 
         this.start();
     }
 
     start() {
-        this.element.classList.add('skeleton');
-        this.element.classList.add(`skeleton-${this.animation.type}`);
-        
-        // let styles = `
-        // ${this.selector}.skeleton {
-        //     opacity: 0.7;
-        //     animation: skeleton-${this.animation.type} ${this.animation.duration} linear infinite alternate;
-        // }`;
-
-        // styles += `
-        // @keyframes skeleton-${this.animation.type} {
-        //     0% {
-        //         background-color: ${this.startClr};
-        //     }
-        //     100% {
-        //         background-color: ${this.endClr});
-        //     }
-        // }`;
-
-
-        // const styleElem = document.createElement('style');
-        // styleElem.innerHTML = styles;
-
-        // document.body.appendChild(styleElem);
+        if(this.type === 'cover'){
+            this.element.classList.add('skeleton');
+            // this.element.classList.add(`skeleton-${this.animation.type}`);
+        } else if (this.type === 'line'){
+            for(let i = 0; i < this.lineCount; i++){
+                const line = document.createElement('div');
+                line.classList.add('skeleton');
+                line.classList.add('skeleton--line');
+                this.element.appendChild(line);
+            }
+        }
     }
 
     stop() {
         // this.element.classList.remove('skeleton');
         // this.element.classList.remove(`skeleton-${this.animation.type}`);
+
         const elements = document.querySelectorAll(this.selector);
         elements.forEach(ele => {
             ele.classList.remove('skeleton');
             ele.classList.remove(`skeleton-${this.animation.type}`);
         });
+
+        document.body.removeChild(this.styleElem);
     }
 }
 
